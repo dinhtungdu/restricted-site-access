@@ -1602,6 +1602,43 @@ class Restricted_Site_Access {
 	}
 
 	/**
+	 * Add IPs programmatically
+	 *
+	 * The $ips can either contain a single IP via string, IP addresses in an array, e.g.
+	 * '192.168.0.1'
+	 * array( '192.168.0.1', '192.168.0.2' )
+	 * or labels can be used as array indices
+	 * array( '192.168.0.1' => 'labelone', '192.168.0.2' => 'labeltwo' )
+	 *
+	 * @param string|array $ips list of IPs to add.
+	 */
+	public static function add_ips2( $ips = array() ) {
+		if ( is_null( self::$rsa_options ) ) {
+			if ( is_null( self::$fields ) ) {
+				self::populate_fields_array();
+			}
+			self::$rsa_options = self::get_options();
+		}
+
+		$ips         = (array) $ips;
+		$allowed_ips = isset( self::$rsa_options['allowed'] ) ? (array) self::$rsa_options['allowed'] : array();
+		$comments    = isset( self::$rsa_options['comment'] ) ? (array) self::$rsa_options['comment'] : array();
+
+		foreach ( $ips as $ip => $label ) {
+			if ( ! in_array( $ip, $allowed_ips, true ) && self::is_ip( $ip ) ) {
+				$allowed_ips[] = $ip;
+				$comments[]    = sanitize_text_field( $label );
+			}
+		}
+
+		if ( self::$rsa_options['allowed'] !== $allowed_ips ) {
+			self::$rsa_options['allowed'] = $allowed_ips;
+			self::$rsa_options['comment'] = $comments;
+			update_option( 'rsa_options', self::sanitize_options( self::$rsa_options ) );
+		}
+	}
+
+	/**
 	 * Remove IPs programmatically
 	 *
 	 * The $ip_list can either contain a single IP via string, IP addresses in an array, e.g.
